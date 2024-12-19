@@ -31,7 +31,8 @@ def create_gradient(size, color1, color2):
 def generate_qrs():
     data_list = data_listbox.get(0, "end")
     if not data_list:
-        status_queue.put("Please add at least one string.")
+        # Use after() to schedule status update in the main thread
+        root.after(0, status_queue.put, "Please add at least one string.")
         return
 
     color1 = qr_color_button["bg"]
@@ -42,10 +43,10 @@ def generate_qrs():
 
     for data in data_list:
         qr = qrcode.QRCode(
-            version=1,  # Increase the version for higher quality if needed
+            version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_H,
-            box_size=15,  # Increase the box size for better resolution
-            border=1,  # Reduce white internal border size (default is 4)
+            box_size=15,
+            border=1,
         )
         qr.add_data(data)
         qr.make(fit=True)
@@ -55,10 +56,8 @@ def generate_qrs():
             module_drawer=RoundedModuleDrawer(),
         ).convert("RGBA")
 
-        # Apply gradient to the modules
         qr_img = apply_gradient_to_modules(qr_img, color1, color2)
 
-        # Add logo if available
         if logo_path:
             try:
                 logo = Image.open(logo_path).convert("RGBA")
@@ -69,21 +68,20 @@ def generate_qrs():
                 )
                 qr_img.paste(logo, logo_pos, mask=logo)
             except Exception as e:
-                status_queue.put(f"Error adding logo: {e}")
+                root.after(0, status_queue.put, f"Error adding logo: {e}")
 
-        # Add bluish background
-        blue_frame_size = 39  # Adjust frame thickness
+        blue_frame_size = 39
         qr_img_with_bg = Image.new(
             "RGBA",
             (qr_img.size[0] + blue_frame_size, qr_img.size[1] + blue_frame_size),
-            (173, 216, 230, 255),  # Light blue color
+            (173, 216, 230, 255),
         )
         qr_img_with_bg.paste(qr_img, (blue_frame_size // 2, blue_frame_size // 2), qr_img)
 
         generated_images.append(qr_img_with_bg)
 
-    status_queue.put("QR codes generated successfully!")
-
+    # Update the status in the main thread after QR code generation
+    root.after(0, status_queue.put, "QR codes generated successfully!")
 
 
 
@@ -205,6 +203,8 @@ def update_status():
     while not status_queue.empty():
         message = status_queue.get()
         status_label.config(text=message)
+    # Continue checking the status queue
+    root.after(100, update_status)
 
 
 def generate_qrs_thread():
