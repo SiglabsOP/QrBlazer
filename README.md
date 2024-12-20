@@ -11,7 +11,7 @@ QR Blazer is a Python-based GUI application for generating and customizing QR co
 Customizable Gradient Colors: Add start and end gradient colors to your QR codes.
 
 
-Logo Integration: Optionally add a logo to the center of your QR codes.
+Logo Integration: Optionally add a logo to the center of your QR codes and pick its size
 
 Batch QR Code Generation: Add multiple URLs or text strings and generate QR codes for each.
 

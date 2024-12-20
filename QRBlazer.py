@@ -1,7 +1,7 @@
 import qrcode
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
-from tkinter import Tk, Label, Entry, Button, filedialog, colorchooser, Listbox, Menu, Toplevel, Canvas
+from tkinter import Tk, Label, Entry, Button, filedialog, colorchooser, Listbox, Menu, Toplevel, Canvas, Scale
 from PIL import Image, ImageTk, ImageDraw
 import os
 import threading
@@ -12,6 +12,7 @@ import webbrowser
 # Global variables
 generated_images = []
 logo_path = None
+logo_size = 80  # Default logo size
 status_queue = queue.Queue()
 
 
@@ -61,7 +62,7 @@ def generate_qrs():
         if logo_path:
             try:
                 logo = Image.open(logo_path).convert("RGBA")
-                logo.thumbnail((80, 80))
+                logo.thumbnail((logo_size, logo_size))  # Use logo_size variable here
                 logo_pos = (
                     (qr_img.size[0] - logo.size[0]) // 2,
                     (qr_img.size[1] - logo.size[1]) // 2,
@@ -82,8 +83,6 @@ def generate_qrs():
 
     # Update the status in the main thread after QR code generation
     root.after(0, status_queue.put, "QR codes generated successfully!")
-
-
 
 
 def apply_gradient_to_modules(qr_img, color1, color2):
@@ -177,6 +176,7 @@ def show_about():
     link.pack()
     link.bind("<Button-1>", lambda e: webbrowser.open("peterdeceuster.uk"))
 
+
 def show_preview():
     if not generated_images:
         status_label.config(text="No QR codes generated to preview.", fg="red")
@@ -251,39 +251,43 @@ menu_bar.add_cascade(label="Help", menu=help_menu)
 root.config(menu=menu_bar)
 
 # Input fields
-Label(root, text="Enter Data/URL:").pack(pady=5)
+Label(root, text="Enter Data/URL:").grid(row=0, column=0, padx=5, pady=5)
 data_entry = Entry(root, width=50)
-data_entry.pack(pady=5)
-Button(root, text="Add", command=add_to_list).pack(pady=5)
+data_entry.grid(row=0, column=1, padx=5, pady=5)
+Button(root, text="Add", command=add_to_list).grid(row=0, column=2, padx=5, pady=5)
 
 # Data List
-Label(root, text="Data List:").pack()
+Label(root, text="Data List:").grid(row=1, column=0, padx=5, pady=5)
 data_listbox = Listbox(root, width=50, height=10, selectmode="extended")
-data_listbox.pack(pady=5)
-Button(root, text="Remove Selected", command=remove_selected).pack(pady=5)
+data_listbox.grid(row=1, column=1, padx=5, pady=5, columnspan=2)
 
-# Color selectors
-Label(root, text="Start Gradient Color:").pack(pady=5)
+# Buttons (Left and Right aligned)
+Button(root, text="Generate QR Codes", command=generate_qrs_thread).grid(row=2, column=0, padx=10, pady=10)
+Button(root, text="Save QR Codes", command=save_qrs).grid(row=2, column=1, padx=10, pady=10)
+Button(root, text="Show Preview", command=show_preview).grid(row=2, column=2, padx=10, pady=10)
+
+# Color pickers (on the left)
+Label(root, text="QR Code Color:").grid(row=3, column=0, padx=5, pady=5)
 qr_color_button = Button(root, bg="black", width=20, command=choose_qr_color)
-qr_color_button.pack(pady=5)
+qr_color_button.grid(row=3, column=1, padx=5, pady=5)
 
-Label(root, text="End Gradient Color:").pack(pady=5)
+Label(root, text="Background Color:").grid(row=4, column=0, padx=5, pady=5)
 bg_color_button = Button(root, bg="white", width=20, command=choose_bg_color)
-bg_color_button.pack(pady=5)
+bg_color_button.grid(row=4, column=1, padx=5, pady=5)
 
-# Logo upload
-Button(root, text="Upload Logo (Optional)", command=upload_logo).pack(pady=5)
+# Logo upload and size (right side)
+Button(root, text="Upload Logo", command=upload_logo).grid(row=5, column=0, padx=5, pady=10, columnspan=3)
 
-# Generate and save buttons
-Button(root, text="Generate QR Codes", command=generate_qrs_thread).pack(pady=5)
-Button(root, text="Save QR Codes", command=save_qrs).pack(pady=5)
-Button(root, text="Preview Single QR Code", command=show_preview).pack(pady=5)
+Label(root, text="Logo Size:").grid(row=6, column=0, padx=5, pady=5)
+logo_size_slider = Scale(root, from_=50, to=150, orient="horizontal", command=lambda value: globals().update({"logo_size": int(value)}))
+logo_size_slider.set(logo_size)
+logo_size_slider.grid(row=6, column=1, padx=5, pady=5)
 
 # Status label
-status_label = Label(root, text="", fg="green")
-status_label.pack(pady=5)
+status_label = Label(root, text="Status: Waiting for input...", fg="blue")
+status_label.grid(row=7, column=0, columnspan=3, pady=20)
 
-# Update status in main loop
-root.after(100, update_status)
+# Start status update thread
+update_status()
 
-root.mainloop()      
+root.mainloop()
